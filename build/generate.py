@@ -319,19 +319,41 @@ def g_fidel(p):
     return "".join(o)
 
 
+def g_loan(p):
+    stages = ["FOLLOW-UP", "PROMISE", "WORKOUT", "RECOVERY"]
+    o = []
+    for k, st in enumerate(stages):
+        y = 14 + k * 38
+        o.append(f'<rect x="0" y="{y}" width="112" height="26" rx="3" fill="none" stroke="{p["ink"]}" stroke-width="1.3"/>'
+                 f'<text x="10" y="{y+17}" class="m" font-size="10" letter-spacing="1" style="fill:{p["ink"]}">{st}</text>')
+        if k < 3:
+            o.append(f'<line x1="56" y1="{y+26}" x2="56" y2="{y+38}" stroke="{p["muted"]}" stroke-width="1.2"/>')
+    o.append(f'<circle cx="112" cy="27" r="5" fill="{p["accent"]}">'
+             f'<animate attributeName="cy" values="27;65;103;141;141" keyTimes="0;.25;.5;.75;1" dur="5s" repeatCount="indefinite"/></circle>')
+    bars = [46, 62, 38, 70, 54]
+    for k, h in enumerate(bars):
+        o.append(f'<rect x="{134+k*11}" y="{150-h}" width="7" height="{h}" fill="{p["accent"] if k == 3 else p["muted"]}" opacity="{1 if k == 3 else .5}"/>')
+    o.append(f'<line x1="130" y1="150.5" x2="188" y2="150.5" stroke="{p["ink"]}"/>'
+             f'<text x="130" y="170" class="m" font-size="9" letter-spacing="1">EWS · NBA</text>')
+    lock = (f'<rect x="150" y="10" width="26" height="20" rx="3" fill="none" stroke="{p["accent"]}" stroke-width="1.5"/>'
+            f'<path d="M155 10 v-5 a8 8 0 0 1 16 0 v5" fill="none" stroke="{p["accent"]}" stroke-width="1.5"/>'
+            f'<circle cx="163" cy="20" r="2.5" fill="{p["accent"]}"/>')
+    return "".join(o) + lock
+
+
 PROJECTS = [
     ("fidel", "fidel · ፊደል", "Python", ["Dependency-free toolkit for Amharic", "text: normalization, tokenizing, SERA", "transliteration, Ethiopic numerals."],
      ["Python", "NLP", "Unicode", "open source"], g_fidel),
+    ("loan", "Loan Recovery", "TypeScript · Python", ["Enterprise platform for loan follow-up,", "collection and NPL workflows: early-", "warning signals and AI next actions."],
+     ["Next.js", "Python", "PostgreSQL", "Docker", "RBAC"], g_loan),
     ("memora", "Memora AI", "Python", ["Telegram assistant built on Google", "Gemini with multi-turn memory. Runs", "as a poller or a serverless Worker."],
      ["Python", "Gemini", "Cloudflare Workers"], g_memora),
-    ("antenna", "Antenna Design", "Python", ["Radiation analysis for dipoles, helix,", "Yagi–Uda and linear arrays, up to", "Dolph–Chebyshev synthesis."],
-     ["NumPy", "SciPy", "Matplotlib"], g_antenna),
     ("leaf", "Mango Leaf Scan", "Dart", ["Flutter app that runs a TensorFlow", "Lite classifier on-device to flag", "mango leaf disease from a photo."],
      ["Flutter", "TFLite", "on-device ML"], g_leaf),
 ]
 
 
-def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str], glyph) -> str:
+def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str], glyph, private: bool = False) -> str:
     W, H = 580, 320
     o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
          f'<rect x=".5" y=".5" width="{W-1}" height="{H-1}" fill="none" stroke="{p["faint"]}"/>']
@@ -348,7 +370,8 @@ def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str
         s, w = chip(x, 246, tg, p, size=11)
         o.append(s)
         x += w + 6
-    o.append(f'<text x="548" y="289" class="m" font-size="11" letter-spacing="1.5" text-anchor="end" style="fill:{p["accent"]}">VIEW SOURCE →</text>')
+    o.append(f'<text x="548" y="289" class="m" font-size="11" letter-spacing="1.5" text-anchor="end" style="fill:{p["accent"]}">'
+             + ("PRIVATE · BUILT AT WORK" if private else "VIEW SOURCE →") + '</text>')
     o.append(f'<g transform="translate(362 72)">{glyph(p)}</g>')
     return svg(W, H, "".join(o), f"Fig. {n}: {title} — {' '.join(desc)}")
 
@@ -373,7 +396,7 @@ def main() -> None:
         (OUT / f"stack-{theme}.svg").write_text(bom(p))
         (OUT / f"footer-{theme}.svg").write_text(footer(p))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
-            (OUT / f"fig-{slug}-{theme}.svg").write_text(card(p, n, title, lang, desc, tags, glyph))
+            (OUT / f"fig-{slug}-{theme}.svg").write_text(card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan")))
     print(f"wrote {len(list(OUT.glob('*.svg')))} files to {OUT}")
 
 

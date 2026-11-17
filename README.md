@@ -9,9 +9,9 @@
 <br><br>
 
 <a href="https://github.com/tofiqueadam/fidel"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-fidel-dark.svg"><img src="assets/fig-fidel-light.svg" width="49%" alt="fidel — Amharic text toolkit"></picture></a>
-<a href="https://github.com/tofiqueadam/memora-ai-telegram-bot"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-memora-dark.svg"><img src="assets/fig-memora-light.svg" width="49%" alt="Memora AI — Gemini Telegram assistant"></picture></a>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-loan-dark.svg"><img src="assets/fig-loan-light.svg" width="49%" alt="Loan Recovery Platform — private enterprise project"></picture>
 
-<a href="https://github.com/tofiqueadam/Antenna-Design-Project"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-antenna-dark.svg"><img src="assets/fig-antenna-light.svg" width="49%" alt="Antenna Design — radiation analysis in Python"></picture></a>
+<a href="https://github.com/tofiqueadam/memora-ai-telegram-bot"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-memora-dark.svg"><img src="assets/fig-memora-light.svg" width="49%" alt="Memora AI — Gemini Telegram assistant"></picture></a>
 <a href="https://github.com/tofiqueadam/mango-disease-detect"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-leaf-dark.svg"><img src="assets/fig-leaf-light.svg" width="49%" alt="Mango Leaf Scan — on-device TFLite in Flutter"></picture></a>
 
 <br>
