@@ -294,12 +294,36 @@ def g_leaf(p):
             f'<rect x="92" y="70" width="52" height="14" fill="{p["accent"]}"/>'
             f'<text x="96" y="80.5" font-size="9" font-weight="700" letter-spacing="1" style="font-family:{MONO};fill:{p["bg"]}">DETECT</text>')
 
+ETH = "'Noto Sans Ethiopic', Nyala, Ebrima, Kefa, 'Abyssinica SIL', sans-serif"
+
+
+def g_fidel(p):
+    grid = ["ሰሱሲሳ", "ለሉሊላ", "መሙሚማ"]
+    cell = 40
+    o = []
+    for r, chars in enumerate(grid):
+        for c, ch in enumerate(chars):
+            o.append(f'<rect x="{14+c*cell}" y="{8+r*cell}" width="{cell}" height="{cell}" fill="none" stroke="{p["faint"]}"/>'
+                     f'<text x="{34+c*cell}" y="{36+r*cell}" text-anchor="middle" font-size="20" style="font-family:{ETH};fill:{p["ink"]}">{ch}</text>')
+    o.append(f'<rect x="14" y="8" width="{4*cell}" height="{3*cell}" fill="none" stroke="{p["ink"]}" stroke-width="1.5"/>')
+    path = [(0, 0), (1, 3), (2, 2), (0, 3), (1, 1), (2, 0)]
+    xs = ";".join(str(14 + c*cell) for _, c in path)
+    ys = ";".join(str(8 + r*cell) for r, _ in path)
+    o.append(f'<rect width="{cell}" height="{cell}" fill="{p["accent"]}" fill-opacity=".14" stroke="{p["accent"]}" stroke-width="2">'
+             f'<animate attributeName="x" values="{xs}" dur="7.2s" calcMode="discrete" repeatCount="indefinite"/>'
+             f'<animate attributeName="y" values="{ys}" dur="7.2s" calcMode="discrete" repeatCount="indefinite"/></rect>')
+    o.append(f'<text x="14" y="160" font-size="15" style="font-family:{ETH};fill:{p["ink"]}">ሰላም</text>'
+             f'<text x="64" y="160" class="m" font-size="13" style="fill:{p["accent"]}">→ selam</text>'
+             f'<text x="14" y="182" font-size="15" style="font-family:{ETH};fill:{p["ink"]}">፳፻፲፮</text>'
+             f'<text x="64" y="182" class="m" font-size="13" style="fill:{p["accent"]}">→ 2016</text>')
+    return "".join(o)
+
 
 PROJECTS = [
+    ("fidel", "fidel · ፊደል", "Python", ["Dependency-free toolkit for Amharic", "text: normalization, tokenizing, SERA", "transliteration, Ethiopic numerals."],
+     ["Python", "NLP", "Unicode", "open source"], g_fidel),
     ("memora", "Memora AI", "Python", ["Telegram assistant built on Google", "Gemini with multi-turn memory. Runs", "as a poller or a serverless Worker."],
      ["Python", "Gemini", "Cloudflare Workers"], g_memora),
-    ("agent", "Telegram AI Agent", "Python", ["A personal userbot that keeps chat", "context, reads images and understands", "voice notes. Hot-reload dev loop."],
-     ["Python", "Telethon", "Gemini", "Docker"], g_agent),
     ("antenna", "Antenna Design", "Python", ["Radiation analysis for dipoles, helix,", "Yagi–Uda and linear arrays, up to", "Dolph–Chebyshev synthesis."],
      ["NumPy", "SciPy", "Matplotlib"], g_antenna),
     ("leaf", "Mango Leaf Scan", "Dart", ["Flutter app that runs a TensorFlow", "Lite classifier on-device to flag", "mango leaf disease from a photo."],
