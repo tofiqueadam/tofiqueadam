@@ -173,9 +173,9 @@ def rain(p: dict, theme: str) -> str:
 # ------------------------------------------------------------- page layout
 # All page-level images share one coordinate system ("page units"):
 #   top sheet:  TW wide, holds the hero and the stack with rain around them
-S, CW = 84, 1200
-TW = CW + 2 * S                        # 1368
-T, B = 42, 42                          # rain above and below the hero
+S, CW = 30, 1200
+TW = CW + 2 * S                        # 1260
+T, B = 42, 70                          # rain above the hero, and the patchy band below it
 
 
 def nest(svg_text: str, x: float, y: float, w: float | None = None, h: float | None = None) -> str:
@@ -191,18 +191,40 @@ def wrap(w: float, h: float, title: str, body: str) -> str:
 
 
 def header_sheet(p: dict, theme: str) -> str:
-    """The hero sheet inside a margin of binary rain. The rest of the page stays clean."""
+    """The hero sheet inside binary rain: full along the top and sides, patchy below.
+
+    Below the box the rain thins and thickens across the width (dense in some
+    stretches, a few drops in others) and fades out before the next section.
+    """
     H = T + 460 + B
-    blur = '<filter id="ob" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="7"/></filter>'
-    mask = (f'<mask id="om" maskUnits="userSpaceOnUse" x="0" y="0" width="{TW}" height="{H}">'
-            f'<rect width="{TW}" height="{H}" fill="#fff"/>'
+    band = T + 460                                  # where the patchy band starts
+    rng = random.Random(3)
+    phases = [(rng.uniform(0, 6.3), f) for f in (0.004, 0.011, 0.023)]
+    def density(x):                                  # smooth random 0..1 across the width
+        v = sum(math.sin(x * f * 6.283 + ph) for ph, f in phases) / 3
+        return max(0.04, min(1, (v + .35) * 1.25))
+    cols = "".join(
+        f'<rect x="{x}" y="{band}" width="{STEP}" height="{B}" fill="url(#og)" fill-opacity="{1 if x < S or x >= TW - S else density(x):.2f}"/>'
+        for x in range(0, TW, STEP))
+    defs = ('<filter id="ob" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="7"/></filter>'
+            '<linearGradient id="og" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#fff"/>'
+            '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+            f'<mask id="om" maskUnits="userSpaceOnUse" x="0" y="0" width="{TW}" height="{H}">'
+            f'<rect width="{TW}" height="{band}" fill="#fff"/>{cols}'
             f'<rect x="{S+14}" y="{T+14}" width="{CW-28}" height="{460-28}" fill="#000" filter="url(#ob)"/></mask>')
     body = (f'<rect width="{TW}" height="{H}" fill="{p["bg"]}"/>'
             + nest(hero(p, theme), S, T)
-            + f'<defs>{blur}{mask}</defs><g mask="url(#om)" font-size="{GLYPH}" style="font-family:{MONO}">'
+            + f'<defs>{defs}</defs><g mask="url(#om)" font-size="{GLYPH}" style="font-family:{MONO}">'
             + rain_columns(theme, "p", 0, 0, TW, H) + '</g>')
     return wrap(TW, H, "Tofique Adam — Full-stack & AI engineer. Drawn as an engineering sheet with an exploded "
                 "view of the stack: interface, services, intelligence, data.", body)
+
+
+def haze(theme: str, uid: str, W: float, H: float) -> str:
+    """Faint, small rain passing through a section, behind its content."""
+    return (f'<defs><clipPath id="z{uid}"><rect x="1" y="1" width="{W-2}" height="{H-2}"/></clipPath></defs>'
+            f'<g clip-path="url(#z{uid})" opacity=".22" font-size="10" style="font-family:{MONO}">'
+            + rain_columns(theme, uid, 0, 0, W, H, dense=False) + '</g>')
 
 
 def hero(p: dict, theme: str = "dark") -> str:
@@ -526,9 +548,10 @@ PROJECTS = [
 ]
 
 
-def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str], glyph, private: bool = False) -> str:
+def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str], glyph, private: bool = False,
+         theme: str = "dark") -> str:
     W, H = 580, 320
-    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', haze(theme, f"c{n}", W, H),
          f'<rect x=".5" y=".5" width="{W-1}" height="{H-1}" fill="none" stroke="{p["faint"]}"/>']
     for x, y, sx, sy in ((10, 10, 1, 1), (W-10, 10, -1, 1), (10, H-10, 1, -1), (W-10, H-10, -1, -1)):
         o.append(f'<path d="M{x} {y+14*sy} V{y} H{x+14*sx}" fill="none" stroke="{p["accent"]}" stroke-width="1.5"/>')
@@ -549,10 +572,10 @@ def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str
     return svg(W, H, "".join(o), f"Fig. {n}: {title} — {' '.join(desc)}")
 
 
-def projects_title(p: dict) -> str:
+def projects_title(p: dict, theme: str = "dark") -> str:
     W, H = 1200, 128
     live = sum(1 for slug, *_ in PROJECTS if slug in LIVE_DEMOS)
-    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', haze(theme, "pt", W, H),
          f'<text x="40" y="44" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">◆ SELECTED WORK</text>',
          '<text x="38" y="88" class="s" font-size="34" font-weight="750" letter-spacing="-1">Projects</text>',
          f'<text x="1160" y="88" class="m" font-size="11" letter-spacing="2" text-anchor="end">'
@@ -582,10 +605,10 @@ def main() -> None:
     for theme, p in THEMES.items():
         (OUT / f"header-{theme}.svg").write_text(header_sheet(p, theme))
         (OUT / f"stack-{theme}.svg").write_text(bom(p))
-        (OUT / f"projects-{theme}.svg").write_text(projects_title(p))
+        (OUT / f"projects-{theme}.svg").write_text(projects_title(p, theme))
         (OUT / f"footer-{theme}.svg").write_text(footer(p))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
-            body = card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan"))
+            body = card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan"), theme=theme)
             (OUT / f"fig-{slug}-{theme}.svg").write_text(body)
     print(f"wrote {len(list(OUT.glob('*.svg')))} files to {OUT}")
 
