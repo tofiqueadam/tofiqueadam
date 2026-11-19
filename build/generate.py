@@ -183,13 +183,14 @@ def hero(p: dict) -> str:
 
 # ------------------------------------------------------- bill of materials
 STACK = [
-    ("Interface", ["TypeScript", "React", "Next.js", "Tailwind CSS", "HTML / CSS"]),
-    ("Services", ["Python", "FastAPI", "Node.js", "Express", "REST · JWT auth"]),
-    ("Intelligence", ["Gemini API", "LLM agents", "vision · voice", "TensorFlow Lite"]),
-    ("Data", ["PostgreSQL", "Redis", "SQL"]),
-    ("Mobile", ["Flutter", "Dart", "Kotlin", "Java · Android"]),
-    ("Delivery", ["Docker", "Git", "Linux", "Bash", "Cloudflare Workers"]),
+    ("AI & LLMs", ["RAG", "Agentic AI", "LangGraph", "LangChain", "Embeddings · vector DBs", "Hugging Face"]),
+    ("Speech & language", ["ASR", "TTS", "Amharic ↔ English voice", "Amharic NLP"]),
+    ("Machine learning", ["scikit-learn", "Pandas · NumPy", "Forecasting", "PyTorch", "TensorFlow Lite"]),
+    ("Backend & data", ["Python", "FastAPI", "SQLAlchemy", "Celery", "PostgreSQL", "Redis"]),
+    ("Interface", ["TypeScript", "Next.js", "React", "JavaScript", "Flutter"]),
+    ("Delivery", ["Docker", "Nginx", "Linux", "GitHub Actions", "Prometheus · Grafana", "Cloudflare Workers"]),
 ]
+ACCENT_LAYERS = {"AI & LLMs", "Speech & language"}
 
 
 def bom(p: dict) -> str:
@@ -199,15 +200,15 @@ def bom(p: dict) -> str:
     o.append(f'<text x="40" y="44" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">◆ BILL OF MATERIALS</text>')
     o.append('<text x="38" y="88" class="s" font-size="34" font-weight="750" letter-spacing="-1">What I build with</text>')
     o.append(f'<text x="1160" y="88" class="m" font-size="11" letter-spacing="2" text-anchor="end">'
-             f'{len(STACK)} LAYERS · INTERFACE → DELIVERY</text>')
+             f'{len(STACK)} LAYERS · MODELS → PRODUCTION</text>')
     for x, h in ((40, "NO."), (110, "LAYER"), (330, "PARTS")):
         o.append(f'<text x="{x}" y="{top-10}" class="m" font-size="10" letter-spacing="2">{h}</text>')
     o.append(f'<line x1="40" y1="{top}" x2="1160" y2="{top}" stroke="{p["ink"]}" stroke-width="1.5"/>')
     for i, (layer, parts) in enumerate(STACK):
         y = top + RH * i
-        acc = layer == "Intelligence"
+        acc = layer in ACCENT_LAYERS
         row = [f'<text x="40" y="{y+32}" font-size="13" style="font-family:{MONO};fill:{p["accent"]}">{i+1:02d}</text>',
-               f'<text x="110" y="{y+33}" class="s" font-size="18" font-weight="650">{layer}</text>']
+               f'<text x="110" y="{y+33}" class="s" font-size="18" font-weight="650">{esc(layer)}</text>']
         x = 330
         for part in parts:
             s, w = chip(x, y + 13, part, p, accent=acc)
