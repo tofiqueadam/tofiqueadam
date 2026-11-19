@@ -335,10 +335,10 @@ STACK = [
 ACCENT_LAYERS = {"AI & LLMs", "Speech & language"}
 
 
-def bom(p: dict) -> str:
+def bom(p: dict, theme: str = "dark") -> str:
     W, RH, top = 1200, 52, 140
     H = top + RH * len(STACK) + 28
-    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>']
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', haze(theme, "st", W, H)]
     o.append(f'<text x="40" y="44" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">◆ BILL OF MATERIALS</text>')
     o.append('<text x="38" y="88" class="s" font-size="34" font-weight="750" letter-spacing="-1">What I build with</text>')
     o.append(f'<text x="1160" y="88" class="m" font-size="11" letter-spacing="2" text-anchor="end">'
@@ -357,7 +357,8 @@ def bom(p: dict) -> str:
             row.append(s)
             x += w + 8
         row.append(f'<line x1="40" y1="{y+RH}" x2="1160" y2="{y+RH}" stroke="{p["faint"]}"/>')
-        o.append(f'<g style="animation:rise .7s cubic-bezier(.2,.7,.2,1) {0.1+i*0.09:.2f}s both">{"".join(row)}</g>')
+        # static rows: with rain in the same image, an entrance fade can leave them hidden
+        o.append(f'<g>{"".join(row)}</g>')
     return svg(W, H, "".join(o), "Tech stack: " + "; ".join(f"{l}: {', '.join(ps)}" for l, ps in STACK))
 
 
@@ -551,7 +552,7 @@ PROJECTS = [
 def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str], glyph, private: bool = False,
          theme: str = "dark") -> str:
     W, H = 580, 320
-    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', haze(theme, f"c{n}", W, H),
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
          f'<rect x=".5" y=".5" width="{W-1}" height="{H-1}" fill="none" stroke="{p["faint"]}"/>']
     for x, y, sx, sy in ((10, 10, 1, 1), (W-10, 10, -1, 1), (10, H-10, 1, -1), (W-10, H-10, -1, -1)):
         o.append(f'<path d="M{x} {y+14*sy} V{y} H{x+14*sx}" fill="none" stroke="{p["accent"]}" stroke-width="1.5"/>')
@@ -575,7 +576,7 @@ def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str
 def projects_title(p: dict, theme: str = "dark") -> str:
     W, H = 1200, 128
     live = sum(1 for slug, *_ in PROJECTS if slug in LIVE_DEMOS)
-    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', haze(theme, "pt", W, H),
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
          f'<text x="40" y="44" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">◆ SELECTED WORK</text>',
          '<text x="38" y="88" class="s" font-size="34" font-weight="750" letter-spacing="-1">Projects</text>',
          f'<text x="1160" y="88" class="m" font-size="11" letter-spacing="2" text-anchor="end">'
@@ -604,7 +605,7 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
     for theme, p in THEMES.items():
         (OUT / f"header-{theme}.svg").write_text(header_sheet(p, theme))
-        (OUT / f"stack-{theme}.svg").write_text(bom(p))
+        (OUT / f"stack-{theme}.svg").write_text(bom(p, theme))
         (OUT / f"projects-{theme}.svg").write_text(projects_title(p, theme))
         (OUT / f"footer-{theme}.svg").write_text(footer(p))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
