@@ -220,11 +220,22 @@ def header_sheet(p: dict, theme: str) -> str:
                 "view of the stack: interface, services, intelligence, data.", body)
 
 
-def haze(theme: str, uid: str, W: float, H: float) -> str:
-    """Faint, small rain passing through a section, behind its content."""
+def haze(theme: str, uid: str, W: float, H: float, opacity: float = .22, size: int = 10,
+         share: float = 1.0) -> str:
+    """Faint, small rain passing through a section, behind its content.
+
+    ``share`` is the fraction of columns that carry any drops at all, so a
+    low value leaves just a few scattered streaks.
+    """
+    rng = random.Random(uid)
+    keep = (lambda lx: True) if share >= 1 else (lambda lx: rng.random() < share)
     return (f'<defs><clipPath id="z{uid}"><rect x="1" y="1" width="{W-2}" height="{H-2}"/></clipPath></defs>'
-            f'<g clip-path="url(#z{uid})" opacity=".22" font-size="10" style="font-family:{MONO}">'
-            + rain_columns(theme, uid, 0, 0, W, H, dense=False) + '</g>')
+            f'<g clip-path="url(#z{uid})" opacity="{opacity}" font-size="{size}" style="font-family:{MONO}">'
+            + rain_columns(theme, uid, 0, 0, W, H, dense=False, keep=keep) + '</g>')
+
+
+# The drops thin out down the page: stack table, then the Projects title, then each row of cards.
+PROJECT_DROPS = {"title": (.2, 9, .35), 1: (.18, 8, .2), 2: (.14, 8, .14), 3: (.1, 7, .08)}
 
 
 def hero(p: dict, theme: str = "dark") -> str:
@@ -552,7 +563,9 @@ PROJECTS = [
 def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str], glyph, private: bool = False,
          theme: str = "dark") -> str:
     W, H = 580, 320
+    op, size, share = PROJECT_DROPS[(n + 1) // 2]
     o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
+         haze(theme, f"c{n}", W, H, op, size, share),
          f'<rect x=".5" y=".5" width="{W-1}" height="{H-1}" fill="none" stroke="{p["faint"]}"/>']
     for x, y, sx, sy in ((10, 10, 1, 1), (W-10, 10, -1, 1), (10, H-10, 1, -1), (W-10, H-10, -1, -1)):
         o.append(f'<path d="M{x} {y+14*sy} V{y} H{x+14*sx}" fill="none" stroke="{p["accent"]}" stroke-width="1.5"/>')
@@ -576,7 +589,7 @@ def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str
 def projects_title(p: dict, theme: str = "dark") -> str:
     W, H = 1200, 128
     live = sum(1 for slug, *_ in PROJECTS if slug in LIVE_DEMOS)
-    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', haze(theme, "pt", W, H, *PROJECT_DROPS["title"]),
          f'<text x="40" y="44" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">◆ SELECTED WORK</text>',
          '<text x="38" y="88" class="s" font-size="34" font-weight="750" letter-spacing="-1">Projects</text>',
          f'<text x="1160" y="88" class="m" font-size="11" letter-spacing="2" text-anchor="end">'
