@@ -93,60 +93,96 @@ def faces():
 RAIN = {"light": dict(trail="#1E9E5A", head="#0B7A3E"), "dark": dict(trail="#3FCF7F", head="#B6FFD2")}
 
 
-def rain(p: dict, theme: str) -> str:
-    """Falling 0/1 columns, dense at the top and sides, a faint haze inside.
+def rain_columns(theme: str, uid: str, seed: int, X0: float, Y0: float, W: float, H: float,
+                 dense: bool, edge_band: float = 170) -> str:
+    """Falling 0/1 columns covering a rectangle. Returns <g> content plus its keyframes.
 
-    Each column is a strip of streaks drawn twice and slid down by one strip
-    height on a loop, so the motion is seamless. A mask fades the rain out
-    towards the centre, and the content is drawn on top, so text stays sharp.
+    Each column is a strip of streaks drawn twice, at [-strip, 0) and
+    [0, strip), and slid down by one strip height on a loop. Since the strip
+    is taller than the area, the visible part is always fully covered and
+    the motion is seamless. ``dense`` fills every column
+    with several streaks; otherwise columns thin out away from the side bands.
     """
-    rng = random.Random(7)
+    rng = random.Random(seed)
     c = RAIN[theme]
-    X0, Y0, W, H = 28, 28, 1144, 404
-    step, size, P = 14, 12, 36          # column pitch, glyph size, glyphs per strip
+    step, size = 14, 12
+    P = int(H // step) + 4                  # glyphs per strip: taller than the area
     strip = P * step
-    o = [f'<defs><clipPath id="rc"><rect x="{X0}" y="{Y0}" width="{W}" height="{H}"/></clipPath>'
-         '<linearGradient id="rl" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-         '<linearGradient id="rr" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>'
-         '<linearGradient id="rt" y2="1" x2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-         f'<mask id="rm" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="460">'
-         f'<rect x="{X0}" y="{Y0}" width="{W}" height="{H}" fill="#fff" fill-opacity=".14"/>'
-         f'<rect x="{X0}" y="{Y0}" width="150" height="{H}" fill="url(#rl)"/>'
-         f'<rect x="{X0+W-170}" y="{Y0}" width="170" height="{H}" fill="url(#rr)"/>'
-         f'<rect x="{X0}" y="{Y0}" width="{W}" height="120" fill="url(#rt)"/></mask></defs>',
-         f'<style>@keyframes fall{{from{{transform:translateY(-{strip}px)}}to{{transform:translateY(0)}}}}</style>',
-         f'<g clip-path="url(#rc)" mask="url(#rm)" font-size="{size}" style="font-family:{MONO}">']
-    tiers = (.10, .22, .38, .6)
-    for col in range((W - 10) // step):
-        x = X0 + 6 + col * step
-        edge = min(x - X0, X0 + W - x) < 170
+    o = [f'<style>@keyframes f{uid}{{from{{transform:translateY(0)}}to{{transform:translateY({strip}px)}}}}</style>']
+    tiers = (.14, .28, .46, .7) if dense else (.10, .22, .38, .6)
+    for col in range(int((W - 4) // step) + 1):
+        x = X0 + 4 + col * step
+        edge = dense or min(x - X0, X0 + W - x) < edge_band
         if not edge and rng.random() < .45:
-            continue                     # thinner rain in the middle keeps the file small
+            continue
         texts = {t: ([], []) for t in tiers}
         heads = ([], [])
         k = rng.randrange(P)
-        for _ in range(rng.choice((2, 2, 3)) if edge else 1):
+        for _ in range(rng.choice((2, 3, 3)) if dense else (rng.choice((2, 2, 3)) if edge else 1)):
             n = rng.randint(8, 20) if edge else rng.randint(6, 12)
-            for j in range(n):           # j = 0 is the tail, j = n-1 the bright head
+            for j in range(n):              # j = 0 is the tail, j = n-1 the bright head
                 pos = (k + j) % P
                 ch = rng.choice("01")
                 for copy in (0, 1):
-                    y = Y0 - strip + (pos + copy * P) * step + size
+                    y = round(Y0 - strip + (pos + copy * P) * step + size, 1)
                     if j == n - 1:
                         heads[0].append(f"{y}"); heads[1].append(ch)
                     else:
                         t = tiers[min(len(tiers) - 1, j * len(tiers) // (n - 1))]
                         texts[t][0].append(f"{y}"); texts[t][1].append(ch)
             k = (k + n + rng.randint(2, 6)) % P
-        dur = rng.uniform(5.5, 12)
-        g = [f'<g style="animation:fall {dur:.1f}s linear -{rng.uniform(0, dur):.1f}s infinite">']
+        dur = rng.uniform(5.5, 12) * max(1.0, H / 404) ** .5
+        # every glyph needs its own x, or SVG advances x after each one and the column slants
+        xs = lambda n, _x=f"{x:.0f}": " ".join([_x] * n)
+        g = [f'<g style="animation:f{uid} {dur:.1f}s linear -{rng.uniform(0, dur):.1f}s infinite">']
         for t, (ys, chs) in texts.items():
             if ys:
-                g.append(f'<text x="{x}" y="{" ".join(ys)}" fill="{c["trail"]}" fill-opacity="{t}">{"".join(chs)}</text>')
-        g.append(f'<text x="{x}" y="{" ".join(heads[0])}" fill="{c["head"]}" font-weight="700">{"".join(heads[1])}</text>')
+                g.append(f'<text x="{xs(len(ys))}" y="{" ".join(ys)}" fill="{c["trail"]}" fill-opacity="{t}">{"".join(chs)}</text>')
+        g.append(f'<text x="{xs(len(heads[0]))}" y="{" ".join(heads[0])}" fill="{c["head"]}" font-weight="700">{"".join(heads[1])}</text>')
         o.append("".join(g) + "</g>")
-    o.append("</g>")
     return "".join(o)
+
+
+def rain(p: dict, theme: str) -> str:
+    """Hero-only haze inside the drawing frame: dense at the top and sides, faint inside."""
+    X0, Y0, W, H = 28, 28, 1144, 404
+    return (f'<defs><clipPath id="hc"><rect x="{X0}" y="{Y0}" width="{W}" height="{H}"/></clipPath>'
+            '<linearGradient id="hl" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+            '<linearGradient id="hr" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>'
+            '<linearGradient id="ht" y2="1" x2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+            f'<mask id="hm" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="460">'
+            f'<rect x="{X0}" y="{Y0}" width="{W}" height="{H}" fill="#fff" fill-opacity=".14"/>'
+            f'<rect x="{X0}" y="{Y0}" width="150" height="{H}" fill="url(#hl)"/>'
+            f'<rect x="{X0+W-170}" y="{Y0}" width="170" height="{H}" fill="url(#hr)"/>'
+            f'<rect x="{X0}" y="{Y0}" width="{W}" height="120" fill="url(#ht)"/></mask></defs>'
+            f'<g clip-path="url(#hc)" mask="url(#hm)" font-size="12" style="font-family:{MONO}">'
+            + rain_columns(theme, "h", 7, X0, Y0, W, H, dense=False) + '</g>')
+
+
+MARGIN = 36
+
+
+def framed(inner_svg: str, w: int, h: int, p: dict, theme: str, uid: str, seed: int, bleed: float = 14) -> str:
+    """Put a finished SVG inside a margin of dense binary rain.
+
+    Every section gets the same margin, and the README stacks the images with
+    no gaps, so the rain reads as one continuous field down the page. The
+    rain fades a little way into the box (``bleed``) and is masked out of
+    the rest, so content stays clean.
+    """
+    M = MARGIN
+    W, H = w + 2 * M, h + 2 * M
+    title = inner_svg[inner_svg.index("<title>") + 7:inner_svg.index("</title>")]
+    nested = inner_svg.replace('<svg xmlns="http://www.w3.org/2000/svg" ', f'<svg x="{M}" y="{M}" ', 1)
+    o = [f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>', nested,
+         f'<defs><filter id="b{uid}" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="{bleed/2:.0f}"/></filter>'
+         f'<mask id="m{uid}" maskUnits="userSpaceOnUse" x="0" y="0" width="{W}" height="{H}">'
+         f'<rect width="{W}" height="{H}" fill="#fff"/>'
+         f'<rect x="{M+bleed}" y="{M+bleed}" width="{w-2*bleed}" height="{h-2*bleed}" fill="#000" filter="url(#b{uid})"/></mask></defs>',
+         f'<g mask="url(#m{uid})" font-size="12" style="font-family:{MONO}">',
+         rain_columns(theme, uid, seed, 0, 0, W, H, dense=True), '</g>']
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
+            f'role="img" aria-label="{title}"><title>{title}</title>{"".join(o)}</svg>\n')
 
 
 def hero(p: dict, theme: str = "dark") -> str:
@@ -509,11 +545,14 @@ def footer(p: dict) -> str:
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     for theme, p in THEMES.items():
-        (OUT / f"hero-{theme}.svg").write_text(hero(p, theme))
-        (OUT / f"stack-{theme}.svg").write_text(bom(p))
-        (OUT / f"footer-{theme}.svg").write_text(footer(p))
+        bom_svg = bom(p)
+        bom_h = int(bom_svg.split('height="', 1)[1].split('"', 1)[0])
+        (OUT / f"hero-{theme}.svg").write_text(framed(hero(p, theme), 1200, 460, p, theme, "x", 11))
+        (OUT / f"stack-{theme}.svg").write_text(framed(bom_svg, 1200, bom_h, p, theme, "s", 12, bleed=10))
+        (OUT / f"footer-{theme}.svg").write_text(framed(footer(p), 1200, 110, p, theme, "f", 13))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
-            (OUT / f"fig-{slug}-{theme}.svg").write_text(card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan")))
+            body = card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan"))
+            (OUT / f"fig-{slug}-{theme}.svg").write_text(framed(body, 580, 320, p, theme, f"c{n}", 20 + n, bleed=10))
     print(f"wrote {len(list(OUT.glob('*.svg')))} files to {OUT}")
 
 
