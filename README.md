@@ -16,8 +16,4 @@
 <a href="https://github.com/tofiqueadam/memora-ai-telegram-bot"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-memora-dark.svg"><img src="assets/fig-memora-light.svg" width="49%" alt="Memora AI — Gemini Telegram assistant"></picture></a>
 <a href="https://github.com/tofiqueadam/mango-disease-detect"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-leaf-dark.svg"><img src="assets/fig-leaf-light.svg" width="49%" alt="Mango Leaf Scan — on-device TFLite in Flutter"></picture></a>
 
-<br>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/footer-dark.svg"><img src="assets/footer-light.svg" width="100%" alt="End of sheet"></picture>
-
 </div>
