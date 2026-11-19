@@ -7,6 +7,7 @@ renderers, no trackers. Run:  python3 build/generate.py
 from __future__ import annotations
 
 import math
+import random
 from pathlib import Path
 from xml.sax.saxutils import escape as esc
 
@@ -88,7 +89,67 @@ def faces():
     return [ui, svc, ai, data]
 
 
-def hero(p: dict) -> str:
+# ------------------------------------------------------------- binary rain
+RAIN = {"light": dict(trail="#1E9E5A", head="#0B7A3E"), "dark": dict(trail="#3FCF7F", head="#B6FFD2")}
+
+
+def rain(p: dict, theme: str) -> str:
+    """Falling 0/1 columns, dense at the top and sides, a faint haze inside.
+
+    Each column is a strip of streaks drawn twice and slid down by one strip
+    height on a loop, so the motion is seamless. A mask fades the rain out
+    towards the centre, and the content is drawn on top, so text stays sharp.
+    """
+    rng = random.Random(7)
+    c = RAIN[theme]
+    X0, Y0, W, H = 28, 28, 1144, 404
+    step, size, P = 14, 12, 36          # column pitch, glyph size, glyphs per strip
+    strip = P * step
+    o = [f'<defs><clipPath id="rc"><rect x="{X0}" y="{Y0}" width="{W}" height="{H}"/></clipPath>'
+         '<linearGradient id="rl" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+         '<linearGradient id="rr" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>'
+         '<linearGradient id="rt" y2="1" x2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+         f'<mask id="rm" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="460">'
+         f'<rect x="{X0}" y="{Y0}" width="{W}" height="{H}" fill="#fff" fill-opacity=".14"/>'
+         f'<rect x="{X0}" y="{Y0}" width="150" height="{H}" fill="url(#rl)"/>'
+         f'<rect x="{X0+W-170}" y="{Y0}" width="170" height="{H}" fill="url(#rr)"/>'
+         f'<rect x="{X0}" y="{Y0}" width="{W}" height="120" fill="url(#rt)"/></mask></defs>',
+         f'<style>@keyframes fall{{from{{transform:translateY(-{strip}px)}}to{{transform:translateY(0)}}}}</style>',
+         f'<g clip-path="url(#rc)" mask="url(#rm)" font-size="{size}" style="font-family:{MONO}">']
+    tiers = (.10, .22, .38, .6)
+    for col in range((W - 10) // step):
+        x = X0 + 6 + col * step
+        edge = min(x - X0, X0 + W - x) < 170
+        if not edge and rng.random() < .45:
+            continue                     # thinner rain in the middle keeps the file small
+        texts = {t: ([], []) for t in tiers}
+        heads = ([], [])
+        k = rng.randrange(P)
+        for _ in range(rng.choice((2, 2, 3)) if edge else 1):
+            n = rng.randint(8, 20) if edge else rng.randint(6, 12)
+            for j in range(n):           # j = 0 is the tail, j = n-1 the bright head
+                pos = (k + j) % P
+                ch = rng.choice("01")
+                for copy in (0, 1):
+                    y = Y0 - strip + (pos + copy * P) * step + size
+                    if j == n - 1:
+                        heads[0].append(f"{y}"); heads[1].append(ch)
+                    else:
+                        t = tiers[min(len(tiers) - 1, j * len(tiers) // (n - 1))]
+                        texts[t][0].append(f"{y}"); texts[t][1].append(ch)
+            k = (k + n + rng.randint(2, 6)) % P
+        dur = rng.uniform(5.5, 12)
+        g = [f'<g style="animation:fall {dur:.1f}s linear -{rng.uniform(0, dur):.1f}s infinite">']
+        for t, (ys, chs) in texts.items():
+            if ys:
+                g.append(f'<text x="{x}" y="{" ".join(ys)}" fill="{c["trail"]}" fill-opacity="{t}">{"".join(chs)}</text>')
+        g.append(f'<text x="{x}" y="{" ".join(heads[0])}" fill="{c["head"]}" font-weight="700">{"".join(heads[1])}</text>')
+        o.append("".join(g) + "</g>")
+    o.append("</g>")
+    return "".join(o)
+
+
+def hero(p: dict, theme: str = "dark") -> str:
     W, H = 1200, 460
     o = [base_css(p)]
     o.append(f'<defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse">'
@@ -97,6 +158,9 @@ def hero(p: dict) -> str:
              f'<path d="M0 2 L10 5 L0 8z" fill="{p["muted"]}"/></marker></defs>')
     o.append(f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>')
     o.append(f'<rect x="28" y="28" width="1144" height="404" fill="url(#g)"/>')
+    o.append(rain(p, theme))
+    # a background-coloured halo keeps small text legible over the rain
+    o.append(f'<style>.h{{paint-order:stroke;stroke:{p["bg"]};stroke-width:5px;stroke-linejoin:round}}</style>')
     o.append(f'<rect x="14.5" y="14.5" width="1171" height="431" fill="none" stroke="{p["ink"]}" stroke-width="1"/>')
     o.append(f'<rect x="28" y="28" width="1144" height="404" fill="none" stroke="{p["ink"]}" stroke-width="1.5"/>')
     # drawing-sheet zone markers
@@ -118,14 +182,14 @@ def hero(p: dict) -> str:
             o.append(f'<text x="{x}" y="{y+zh/2+3:.1f}" class="m" font-size="9" text-anchor="middle">{letter}</text>')
 
     # ---- identity block
-    o.append(f'<text x="72" y="96" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">'
+    o.append(f'<text x="72" y="96" class="m h" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">'
              f'◆ ENGINEERING PROFILE · REV {REV}</text>')
-    o.append('<text x="68" y="178" class="s" font-size="80" font-weight="800" letter-spacing="-3">Tofique Adam</text>')
+    o.append('<text x="68" y="178" class="s h" font-size="80" font-weight="800" letter-spacing="-3">Tofique Adam</text>')
     o.append(f'<rect x="72" y="200" width="56" height="4" fill="{p["accent"]}"/>')
-    o.append('<text x="72" y="246" class="s" font-size="30" font-weight="500" letter-spacing="-.5">'
+    o.append('<text x="72" y="246" class="s h" font-size="30" font-weight="500" letter-spacing="-.5">'
              'Full-stack &amp; AI engineer.</text>')
-    o.append('<text x="72" y="290" class="m" font-size="14">I design and build web platforms, APIs and</text>')
-    o.append('<text x="72" y="312" class="m" font-size="14">LLM-powered tools — from the interface down to the data.</text>')
+    o.append('<text x="72" y="290" class="m h" font-size="14">I design and build web platforms, APIs and</text>')
+    o.append('<text x="72" y="312" class="m h" font-size="14">LLM-powered tools — from the interface down to the data.</text>')
     for x, k, v in ((72, "FOCUS", "Applied AI"), (222, "STACK", "Python · TypeScript"), (432, "STATUS", "Building")):
         o.append(f'<text x="{x}" y="362" class="m" font-size="10" letter-spacing="2">{k}</text>')
         dx = 16 if k == "STATUS" else 0
@@ -160,9 +224,9 @@ def hero(p: dict) -> str:
         g = [iso_plate(cx, cy, a, b, t, p, faces()[k], accent=acc),
              f'<polyline points="{lx+6},{cy} {lx+30},{cy}" fill="none" stroke="{p["accent"] if acc else p["muted"]}"/>',
              f'<circle cx="{lx+3}" cy="{cy}" r="2.5" fill="{p["accent"] if acc else p["ink"]}"/>',
-             f'<text x="{lx+38}" y="{cy+4}" font-size="12" letter-spacing="1.5" style="font-family:{MONO}">'
+             f'<text x="{lx+38}" y="{cy+4}" class="h" font-size="12" letter-spacing="1.5" style="font-family:{MONO}">'
              f'<tspan fill="{p["accent"]}">{num}</tspan><tspan fill="{p["ink"]}" font-weight="700"> {name}</tspan></text>',
-             f'<text x="{lx+38}" y="{cy+21}" class="m" font-size="11">{sub}</text>']
+             f'<text x="{lx+38}" y="{cy+21}" class="m h" font-size="11">{sub}</text>']
         o.append(f'<g><animateTransform attributeName="transform" type="translate" values="0 0;0 {shifts[k]};0 0" '
                  f'dur="6s" repeatCount="indefinite" {EASE}/>{"".join(g)}</g>')
 
@@ -445,7 +509,7 @@ def footer(p: dict) -> str:
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     for theme, p in THEMES.items():
-        (OUT / f"hero-{theme}.svg").write_text(hero(p))
+        (OUT / f"hero-{theme}.svg").write_text(hero(p, theme))
         (OUT / f"stack-{theme}.svg").write_text(bom(p))
         (OUT / f"footer-{theme}.svg").write_text(footer(p))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
