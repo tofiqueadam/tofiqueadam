@@ -186,7 +186,7 @@ STACK = [
     ("AI & LLMs", ["RAG", "Agentic AI", "LangGraph", "LangChain", "Embeddings · vector DBs", "Hugging Face"]),
     ("Speech & language", ["ASR", "TTS", "Amharic ↔ English voice", "Amharic NLP"]),
     ("Machine learning", ["scikit-learn", "Pandas · NumPy", "Forecasting", "PyTorch", "TensorFlow Lite"]),
-    ("Backend & data", ["Python", "FastAPI", "SQLAlchemy", "Celery", "PostgreSQL", "Redis"]),
+    ("Backend & data", ["Python", "FastAPI", "Node.js", "Express", "SQLAlchemy", "Celery", "PostgreSQL", "Redis"]),
     ("Interface", ["TypeScript", "Next.js", "React", "JavaScript", "Flutter"]),
     ("Delivery", ["Docker", "Nginx", "Linux", "GitHub Actions", "Prometheus · Grafana", "Cloudflare Workers"]),
 ]

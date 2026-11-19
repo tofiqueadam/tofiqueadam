@@ -4,7 +4,7 @@
 
 <br><br>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/stack-dark.svg"><img src="assets/stack-light.svg" width="100%" alt="What I build with — AI and LLMs: RAG, agentic AI, LangGraph, LangChain, embeddings and vector databases, Hugging Face. Speech and language: ASR, TTS, Amharic and English voice, Amharic NLP. Machine learning: scikit-learn, Pandas, NumPy, forecasting, PyTorch, TensorFlow Lite. Backend and data: Python, FastAPI, SQLAlchemy, Celery, PostgreSQL, Redis. Interface: TypeScript, Next.js, React, JavaScript, Flutter. Delivery: Docker, Nginx, Linux, GitHub Actions, Prometheus, Grafana, Cloudflare Workers."></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/stack-dark.svg"><img src="assets/stack-light.svg" width="100%" alt="What I build with — AI and LLMs: RAG, agentic AI, LangGraph, LangChain, embeddings and vector databases, Hugging Face. Speech and language: ASR, TTS, Amharic and English voice, Amharic NLP. Machine learning: scikit-learn, Pandas, NumPy, forecasting, PyTorch, TensorFlow Lite. Backend and data: Python, FastAPI, Node.js, Express, SQLAlchemy, Celery, PostgreSQL, Redis. Interface: TypeScript, Next.js, React, JavaScript, Flutter. Delivery: Docker, Nginx, Linux, GitHub Actions, Prometheus, Grafana, Cloudflare Workers."></picture>
 
 <br><br>
 
