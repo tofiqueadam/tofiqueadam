@@ -175,7 +175,7 @@ def rain(p: dict, theme: str) -> str:
 #   top sheet:  TW wide, holds the hero and the stack with rain around them
 S, CW = 84, 1200
 TW = CW + 2 * S                        # 1368
-T, G, B = 42, 42, 28                   # top margin, hero/stack gap, bottom margin
+T, B = 42, 42                          # rain above and below the hero
 
 
 def nest(svg_text: str, x: float, y: float, w: float | None = None, h: float | None = None) -> str:
@@ -190,27 +190,19 @@ def wrap(w: float, h: float, title: str, body: str) -> str:
             f'role="img" aria-label="{esc(title)}"><title>{esc(title)}</title>{body}</svg>\n')
 
 
-def top_sheet(p: dict, theme: str) -> tuple[str, int]:
-    """Hero and stack in one image, inside one continuous field of rain."""
-    stack_svg = bom(p)
-    sh = int(stack_svg.split('height="', 1)[1].split('"', 1)[0])
-    hy, sy = T, T + 460 + G
-    H = sy + sh + B
+def header_sheet(p: dict, theme: str) -> str:
+    """The hero sheet inside a margin of binary rain. The rest of the page stays clean."""
+    H = T + 460 + B
     blur = '<filter id="ob" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="7"/></filter>'
     mask = (f'<mask id="om" maskUnits="userSpaceOnUse" x="0" y="0" width="{TW}" height="{H}">'
             f'<rect width="{TW}" height="{H}" fill="#fff"/>'
-            f'<g fill="#000" filter="url(#ob)">'
-            f'<rect x="{S+14}" y="{hy+14}" width="{CW-28}" height="{460-28}"/>'
-            f'<rect x="{S+10}" y="{sy+10}" width="{CW-20}" height="{sh-20}"/>'
-            # below the stack, keep rain only at the sides so it flows into the strips
-            f'<rect x="{S+14}" y="{sy+sh-20}" width="{CW-28}" height="{B+40}"/></g></mask>')
+            f'<rect x="{S+14}" y="{T+14}" width="{CW-28}" height="{460-28}" fill="#000" filter="url(#ob)"/></mask>')
     body = (f'<rect width="{TW}" height="{H}" fill="{p["bg"]}"/>'
-            + nest(hero(p, theme), S, hy) + nest(stack_svg, S, sy)
+            + nest(hero(p, theme), S, T)
             + f'<defs>{blur}{mask}</defs><g mask="url(#om)" font-size="{GLYPH}" style="font-family:{MONO}">'
             + rain_columns(theme, "p", 0, 0, TW, H) + '</g>')
-    return wrap(TW, H, "Tofique Adam — Full-stack & AI engineer. Engineering profile sheet and tech stack.", body), H
-
-
+    return wrap(TW, H, "Tofique Adam — Full-stack & AI engineer. Drawn as an engineering sheet with an exploded "
+                "view of the stack: interface, services, intelligence, data.", body)
 
 
 def hero(p: dict, theme: str = "dark") -> str:
@@ -343,7 +335,7 @@ def bom(p: dict) -> str:
             row.append(s)
             x += w + 8
         row.append(f'<line x1="40" y1="{y+RH}" x2="1160" y2="{y+RH}" stroke="{p["faint"]}"/>')
-        o.append(f"<g>{''.join(row)}</g>")  # static: an entrance fade could leave rows hidden
+        o.append(f'<g style="animation:rise .7s cubic-bezier(.2,.7,.2,1) {0.1+i*0.09:.2f}s both">{"".join(row)}</g>')
     return svg(W, H, "".join(o), "Tech stack: " + "; ".join(f"{l}: {', '.join(ps)}" for l, ps in STACK))
 
 
@@ -557,6 +549,21 @@ def card(p: dict, n: int, title: str, lang: str, desc: list[str], tags: list[str
     return svg(W, H, "".join(o), f"Fig. {n}: {title} — {' '.join(desc)}")
 
 
+def projects_title(p: dict) -> str:
+    W, H = 1200, 128
+    live = sum(1 for slug, *_ in PROJECTS if slug in LIVE_DEMOS)
+    o = [base_css(p), f'<rect width="{W}" height="{H}" fill="{p["bg"]}"/>',
+         f'<text x="40" y="44" class="m" font-size="12" letter-spacing="2.5" style="fill:{p["accent"]}">◆ SELECTED WORK</text>',
+         '<text x="38" y="88" class="s" font-size="34" font-weight="750" letter-spacing="-1">Projects</text>',
+         f'<text x="1160" y="88" class="m" font-size="11" letter-spacing="2" text-anchor="end">'
+         f'{len(PROJECTS)} FIGURES · {live} LIVE DEMOS · 1 PRIVATE</text>',
+         f'<line x1="40" y1="110" x2="1160" y2="110" stroke="{p["ink"]}" stroke-width="1.5"/>']
+    return svg(W, H, "".join(o), f"Projects: {len(PROJECTS)} figures, {live} with live demos")
+
+
+LIVE_DEMOS = {"fidel", "tera", "overhead"}
+
+
 # ------------------------------------------------------------------ footer
 def footer(p: dict) -> str:
     W, H = 1200, 110
@@ -573,8 +580,9 @@ def footer(p: dict) -> str:
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     for theme, p in THEMES.items():
-        top, _ = top_sheet(p, theme)
-        (OUT / f"top-{theme}.svg").write_text(top)
+        (OUT / f"header-{theme}.svg").write_text(header_sheet(p, theme))
+        (OUT / f"stack-{theme}.svg").write_text(bom(p))
+        (OUT / f"projects-{theme}.svg").write_text(projects_title(p))
         (OUT / f"footer-{theme}.svg").write_text(footer(p))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
             body = card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan"))
