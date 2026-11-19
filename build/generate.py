@@ -173,13 +173,9 @@ def rain(p: dict, theme: str) -> str:
 # ------------------------------------------------------------- page layout
 # All page-level images share one coordinate system ("page units"):
 #   top sheet:  TW wide, holds the hero and the stack with rain around them
-#   side strips: S wide, floated left and right of the project cards
-#   cards:      CARD_W wide each, two per row, filling the space between strips
 S, CW = 84, 1200
 TW = CW + 2 * S                        # 1368
 T, G, B = 42, 42, 28                   # top margin, hero/stack gap, bottom margin
-CARD_W, CARD_H, PAD = 600, 340, 10     # card image incl. transparent padding
-ROWS = 3
 
 
 def nest(svg_text: str, x: float, y: float, w: float | None = None, h: float | None = None) -> str:
@@ -215,27 +211,6 @@ def top_sheet(p: dict, theme: str) -> tuple[str, int]:
     return wrap(TW, H, "Tofique Adam — Full-stack & AI engineer. Engineering profile sheet and tech stack.", body), H
 
 
-def side_strip(p: dict, theme: str, side: str, top_h: int) -> str:
-    """A tall strip of the same rain, floated beside the project cards."""
-    H = CARD_H * ROWS
-    gx0 = 0 if side == "left" else TW - S
-    fade = (f'<linearGradient id="sf" x1="0" y1="0" x2="0" y2="1"><stop offset=".8" stop-color="#fff"/>'
-            f'<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-            f'<mask id="sm" maskUnits="userSpaceOnUse" x="0" y="0" width="{S}" height="{H}"><rect width="{S}" height="{H}" fill="url(#sf)"/></mask>')
-    body = (f'<rect width="{S}" height="{H}" fill="{p["bg"]}"/><defs>{fade}</defs>'
-            f'<g mask="url(#sm)" font-size="{GLYPH}" style="font-family:{MONO}">'
-            + rain_columns(theme, "p", gx0, top_h, S, H) + '</g>')
-    return wrap(S, H, "", body)
-
-
-def padded_card(card_svg: str) -> str:
-    """A card with a transparent margin, so rows of cards keep their gaps."""
-    title = card_svg[card_svg.index("<title>") + 7:card_svg.index("</title>")]
-    inner_w, inner_h = CARD_W - 2 * PAD, CARD_H - 2 * PAD
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {CARD_W} {CARD_H}" width="{CARD_W}" height="{CARD_H}" '
-            f'role="img" aria-label="{title}"><title>{title}</title>'
-            + nest(card_svg, PAD, PAD, inner_w, inner_h).replace('viewBox="0 0', 'preserveAspectRatio="xMidYMid meet" viewBox="0 0', 1)
-            + '</svg>\n')
 
 
 def hero(p: dict, theme: str = "dark") -> str:
@@ -598,14 +573,12 @@ def footer(p: dict) -> str:
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     for theme, p in THEMES.items():
-        top, top_h = top_sheet(p, theme)
+        top, _ = top_sheet(p, theme)
         (OUT / f"top-{theme}.svg").write_text(top)
-        for side in ("left", "right"):
-            (OUT / f"rain-{side}-{theme}.svg").write_text(side_strip(p, theme, side, top_h))
         (OUT / f"footer-{theme}.svg").write_text(footer(p))
         for n, (slug, title, lang, desc, tags, glyph) in enumerate(PROJECTS, 1):
             body = card(p, n, title, lang, desc, tags, glyph, private=(slug == "loan"))
-            (OUT / f"fig-{slug}-{theme}.svg").write_text(padded_card(body))
+            (OUT / f"fig-{slug}-{theme}.svg").write_text(body)
     print(f"wrote {len(list(OUT.glob('*.svg')))} files to {OUT}")
 
 
