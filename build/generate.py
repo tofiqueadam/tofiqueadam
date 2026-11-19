@@ -341,9 +341,61 @@ def g_loan(p):
     return "".join(o) + lock
 
 
+def g_tera(p):
+    # A route with three stations; the middle one shows a live queue meter
+    # whose bars rise and fall, and a minibus shuttles along the line.
+    o = [f'<line x1="6" y1="150" x2="184" y2="150" stroke="{p["ink"]}" stroke-width="1.6"/>']
+    for x in (20, 95, 170):
+        o.append(f'<circle cx="{x}" cy="150" r="6" fill="{p["bg"]}" stroke="{p["ink"]}" stroke-width="1.6"/>')
+    o.append(f'<circle cx="95" cy="150" r="3" fill="{p["accent"]}"/>')
+    o.append(f'<line x1="95" y1="144" x2="95" y2="112" stroke="{p["muted"]}" stroke-dasharray="3 3"/>')
+    levels = ["1;2;4;3;1", "1;3;4;2;1", "0;2;4;2;0", "0;1;3;1;0"]
+    for k, lv in enumerate(levels):
+        hs = ";".join(str(10 + int(v) * 13) for v in lv.split(";"))
+        ys = ";".join(str(102 - (10 + int(v) * 13)) for v in lv.split(";"))
+        o.append(f'<rect x="{66+k*16}" width="11" fill="{p["accent"] if k < 2 else p["muted"]}" y="92" height="10">'
+                 f'<animate attributeName="height" values="{hs}" dur="6s" repeatCount="indefinite"/>'
+                 f'<animate attributeName="y" values="{ys}" dur="6s" repeatCount="indefinite"/></rect>')
+    o.append(f'<line x1="60" y1="102.5" x2="130" y2="102.5" stroke="{p["ink"]}"/>')
+    bus = (f'<g><rect x="-15" y="-11" width="30" height="14" rx="3" fill="{p["bg"]}" stroke="{p["ink"]}" stroke-width="1.4"/>'
+           f'<rect x="-11" y="-8" width="8" height="5" fill="{p["accent"]}"/><rect x="0" y="-8" width="8" height="5" fill="{p["accent"]}"/>'
+           f'<circle cx="-8" cy="4" r="2.6" fill="{p["ink"]}"/><circle cx="8" cy="4" r="2.6" fill="{p["ink"]}"/>'
+           f'<animateTransform attributeName="transform" type="translate" values="20 136;170 136;20 136" dur="8s" repeatCount="indefinite" {EASE}/></g>')
+    o.append(bus)
+    o.append(f'<text x="20" y="30" font-size="26" style="font-family:{ETH};fill:{p["ink"]}">ተራ</text>'
+             f'<text x="20" y="50" class="m" font-size="10" letter-spacing="1.5" style="fill:{p["accent"]}">LIVE QUEUE</text>')
+    return "".join(o)
+
+
+def g_overhead(p):
+    # A sky dome: horizon ring, 30°/60° rings, a planet, and a satellite
+    # tracing a pass from horizon to horizon.
+    cx, cy, R = 95, 92, 82
+    o = [f'<circle cx="{cx}" cy="{cy}" r="{R}" fill="none" stroke="{p["ink"]}" stroke-width="1.6"/>']
+    for r in (R * 2 / 3, R / 3):
+        o.append(f'<circle cx="{cx}" cy="{cy}" r="{r:.1f}" fill="none" stroke="{p["faint"]}"/>')
+    o.append(f'<line x1="{cx-R}" y1="{cy}" x2="{cx+R}" y2="{cy}" stroke="{p["faint"]}"/>'
+             f'<line x1="{cx}" y1="{cy-R}" x2="{cx}" y2="{cy+R}" stroke="{p["faint"]}"/>')
+    for lbl, x, y in (("N", cx, cy - R - 6), ("E", cx - R - 10, cy + 4), ("W", cx + R + 4, cy + 4)):
+        o.append(f'<text x="{x}" y="{y}" class="m" font-size="10" text-anchor="middle" style="fill:{p["muted"]}">{lbl}</text>')
+    for x, y in ((40, 60), (130, 40), (150, 130), (60, 140), (110, 110)):
+        o.append(f'<circle cx="{x}" cy="{y}" r="1.4" fill="{p["muted"]}"/>')
+    o.append(f'<circle cx="122" cy="72" r="6" fill="none" stroke="{p["ink"]}" stroke-width="1.3"/><circle cx="122" cy="72" r="2.6" fill="{p["ink"]}"/>')
+    arc = f"M{cx-R+6} {cy+30} Q {cx} {cy-110} {cx+R-6} {cy+20}"
+    o.append(f'<path d="{arc}" fill="none" stroke="{p["accent"]}" stroke-width="1.2" stroke-dasharray="2 5"/>')
+    o.append(f'<path d="M0 -5 L5 0 L0 5 L-5 0 Z" fill="{p["accent"]}">'
+             f'<animateMotion path="{arc}" dur="7s" repeatCount="indefinite" {EASE.replace(";0.45 0 0.55 1", "")} keyPoints="0;1" keyTimes="0;1"/></path>')
+    o.append(f'<text x="{cx+4}" y="{cy-34}" class="m" font-size="10" letter-spacing="1" style="fill:{p["accent"]}">ISS</text>')
+    return "".join(o)
+
+
 PROJECTS = [
     ("fidel", "fidel · ፊደል", "Python", ["Dependency-free toolkit for Amharic", "text: normalization, tokenizing, SERA", "transliteration, Ethiopic numerals."],
      ["Python", "NLP", "Unicode", "open source"], g_fidel),
+    ("tera", "Tera Live · ተራ", "TypeScript · JS", ["Live minibus queues for Addis Ababa,", "crowdsourced in two taps from a PWA", "or a Telegram bot. Bayesian estimates."],
+     ["Cloudflare Workers", "D1", "PWA", "Telegram"], g_tera),
+    ("overhead", "Overhead", "JavaScript", ["Satellites, planets, Sun and Moon above", "you, computed live in the browser:", "SGP4 in a Web Worker, pass prediction."],
+     ["SGP4", "Web Worker", "Canvas", "no build"], g_overhead),
     ("loan", "Loan Recovery", "TypeScript · Python", ["Enterprise platform for loan follow-up,", "collection and NPL workflows: early-", "warning signals and AI next actions."],
      ["Next.js", "Python", "PostgreSQL", "Docker", "RBAC"], g_loan),
     ("memora", "Memora AI", "Python", ["Telegram assistant built on Google", "Gemini with multi-turn memory. Runs", "as a poller or a serverless Worker."],

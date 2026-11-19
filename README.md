@@ -9,6 +9,9 @@
 <br><br>
 
 <a href="https://github.com/tofiqueadam/fidel"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-fidel-dark.svg"><img src="assets/fig-fidel-light.svg" width="49%" alt="fidel — Amharic text toolkit"></picture></a>
+<a href="https://github.com/tofiqueadam/tera-live"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-tera-dark.svg"><img src="assets/fig-tera-light.svg" width="49%" alt="Tera Live — live minibus queues for Addis Ababa"></picture></a>
+
+<a href="https://github.com/tofiqueadam/overhead"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-overhead-dark.svg"><img src="assets/fig-overhead-light.svg" width="49%" alt="Overhead — live satellite and sky tracker in the browser"></picture></a>
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-loan-dark.svg"><img src="assets/fig-loan-light.svg" width="49%" alt="Loan Recovery Platform — private enterprise project"></picture>
 
 <a href="https://github.com/tofiqueadam/memora-ai-telegram-bot"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/fig-memora-dark.svg"><img src="assets/fig-memora-light.svg" width="49%" alt="Memora AI — Gemini Telegram assistant"></picture></a>
